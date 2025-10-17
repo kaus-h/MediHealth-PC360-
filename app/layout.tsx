@@ -4,6 +4,7 @@ import { Inter, Playfair_Display } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Analytics } from "@vercel/analytics/react"
 
 const inter = Inter({
   variable: "--font-inter",
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
     apple: "/images/medihealth-icon.png",
     shortcut: "/images/medihealth-icon.png",
   },
-    generator: 'v0.app'
+  generator: "v0.app",
 }
 
 export default function RootLayout({
@@ -53,6 +54,7 @@ export default function RootLayout({
           </a>
           <div id="main-content">{children}</div>
           <Toaster />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
