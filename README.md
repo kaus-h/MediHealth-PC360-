@@ -1,4 +1,3 @@
-
 # 🏥 MediHealth (PatientConnect360)
 **A Full-Stack Healthcare Coordination Platform for Seamless Patient–Clinician Communication**
 
@@ -125,7 +124,7 @@ Visit **[http://localhost:3000](http://localhost:3000)** to view the app.
 
 ### 5️⃣ Deploy (Optional)
 
-Push your code to GitHub — Vercel automatically builds and deploys previews for each commit.
+Push your code to GitHub and deploys previews for each commit.
 
 ---
 
@@ -198,5 +197,3 @@ This project is currently under private development. To open-source, use the [MI
 ---
 
 > 🩺 *MediHealth transforms fragmented healthcare into a connected, intelligent ecosystem — empowering patients and clinicians to collaborate for better outcomes.*
-
-
