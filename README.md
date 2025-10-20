@@ -191,7 +191,6 @@ This project is currently under private development. To open-source, use the [MI
 
 ## 💬 Acknowledgments
 
-* **v0 by Vercel** – for AI-assisted development and design generation
 * **Supabase** – for robust authentication and real-time database features
 * **Vercel** – for seamless deployment and scaling
 * **Tailwind & shadcn/ui** – for rapid, accessible UI development
@@ -200,11 +199,4 @@ This project is currently under private development. To open-source, use the [MI
 
 > 🩺 *MediHealth transforms fragmented healthcare into a connected, intelligent ecosystem — empowering patients and clinicians to collaborate for better outcomes.*
 
-```
 
----
-
-Would you like me to:
-- 🧱 add **badges and shields** (e.g., “Built with Next.js”, “Deployed on Vercel”, “Supabase Powered”)  
-- or 🧭 generate a **condensed README version** suitable for recruiters who skim GitHub repos (1-minute read format)?
-```
