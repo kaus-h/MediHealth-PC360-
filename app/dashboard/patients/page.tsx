@@ -18,6 +18,7 @@ interface Patient {
   insurance_provider: string
   insurance_policy_number: string
   created_at: string
+  access_type: string
   profile: {
     first_name: string
     last_name: string
@@ -43,54 +44,58 @@ export default function PatientsPage() {
     } = await supabase.auth.getUser()
     if (!user) return
 
-    const { data: clinicianData } = await supabase.from("clinicians").select("id").eq("profile_id", user.id).single()
+    // The view handles access control for clinicians, caregivers, and physicians
+    const { data: patientsData, error: patientsError } = await supabase
+      .from("accessible_patients")
+      .select("*")
+      .eq("access_type", "clinician")
+      .order("created_at", { ascending: false })
 
-    if (!clinicianData) {
-      console.log("[v0] No clinician record found for user")
+    if (patientsError) {
+      console.error("[v0] Error fetching patients:", patientsError)
       setLoading(false)
       return
     }
 
-    console.log("[v0] Clinician ID:", clinicianData.id)
+    console.log("[v0] Found patients from view:", patientsData?.length || 0)
 
-    const { data, error } = await supabase
-      .from("patient_clinicians")
-      .select(
-        `
-        id,
-        relationship_type,
-        assigned_at,
-        patient:patients!patient_clinicians_patient_id_fkey(
-          id,
-          profile_id,
-          medical_record_number,
-          primary_diagnosis,
-          status,
-          admission_date,
-          insurance_provider,
-          insurance_policy_number,
-          created_at,
-          profile:profiles!patients_profile_id_fkey(
-            first_name,
-            last_name,
-            email,
-            phone,
-            date_of_birth
-          )
-        )
-      `,
-      )
-      .eq("clinician_id", clinicianData.id)
-      .is("revoked_at", null)
-      .order("assigned_at", { ascending: false })
-
-    if (error) {
-      console.error("[v0] Error fetching patients:", error)
-    } else {
-      console.log("[v0] Found patients:", data?.length || 0)
-      const patientList = data?.map((item: any) => item.patient).filter(Boolean) || []
-      setPatients(patientList)
+    if (!patientsData || patientsData.length === 0) {
+      setLoading(false)
+      return
     }
+
+    // Fetch profiles for patients
+    const profileIds = patientsData.map((p) => p.profile_id)
+    const { data: profilesData, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, first_name, last_name, email, phone, date_of_birth")
+      .in("id", profileIds)
+
+    if (profilesError) {
+      console.error("[v0] Error fetching profiles:", profilesError)
+      setLoading(false)
+      return
+    }
+
+    console.log("[v0] Found profiles:", profilesData?.length || 0)
+
+    // Combine the data
+    const patientList = patientsData.map((patient) => {
+      const profile = profilesData?.find((p) => p.id === patient.profile_id)
+      return {
+        ...patient,
+        profile: profile || {
+          first_name: "Unknown",
+          last_name: "User",
+          email: "",
+          phone: "",
+          date_of_birth: "",
+        },
+      }
+    })
+
+    console.log("[v0] Final patient list:", patientList.length)
+    setPatients(patientList)
     setLoading(false)
   }
 

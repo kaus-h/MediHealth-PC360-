@@ -50,87 +50,99 @@ export default async function MessagesPage() {
 
   if (profile.role === "patient") {
     // Patients can message their clinicians and caregivers
-    const { data: patient } = await supabase.from("patients").select("id").eq("profile_id", user.id).single()
+    const { data: patient } = await supabase.from("patients").select("id").eq("profile_id", user.id).maybeSingle()
 
     if (patient) {
-      // Get clinicians from visits
-      const { data: visits } = await supabase
-        .from("visits")
-        .select(
-          `
-          clinician:clinicians!visits_clinician_id_fkey(
-            id,
-            profile:profiles!clinicians_profile_id_fkey(id, first_name, last_name, role)
-          )
-        `,
-        )
+      const { data: patientClinicians } = await supabase
+        .from("patient_clinicians")
+        .select("clinician_id")
         .eq("patient_id", patient.id)
+        .is("revoked_at", null)
 
-      const clinicians = visits
-        ?.map((v) => v.clinician?.profile)
-        .filter((p) => p)
-        .filter((p, i, arr) => arr.findIndex((t) => t?.id === p?.id) === i)
+      if (patientClinicians && patientClinicians.length > 0) {
+        const clinicianIds = patientClinicians.map((pc) => pc.clinician_id)
+
+        const { data: cliniciansData } = await supabase.from("clinicians").select("profile_id").in("id", clinicianIds)
+
+        if (cliniciansData && cliniciansData.length > 0) {
+          const profileIds = cliniciansData.map((c) => c.profile_id)
+
+          const { data: clinicianProfiles } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name, role")
+            .in("id", profileIds)
+
+          potentialRecipients = [...(clinicianProfiles || [])]
+        }
+      }
 
       // Get caregivers
       const { data: patientCaregivers } = await supabase
         .from("patient_caregivers")
-        .select(
-          `
-          caregiver:caregivers!patient_caregivers_caregiver_id_fkey(
-            profile:profiles!caregivers_profile_id_fkey(id, first_name, last_name, role)
-          )
-        `,
-        )
+        .select("caregiver_id")
         .eq("patient_id", patient.id)
         .is("revoked_at", null)
 
-      const caregivers = patientCaregivers?.map((pc) => pc.caregiver?.profile).filter((p) => p)
+      if (patientCaregivers && patientCaregivers.length > 0) {
+        const caregiverIds = patientCaregivers.map((pc) => pc.caregiver_id)
 
-      potentialRecipients = [...(clinicians || []), ...(caregivers || [])]
+        const { data: caregiversData } = await supabase.from("caregivers").select("profile_id").in("id", caregiverIds)
+
+        if (caregiversData && caregiversData.length > 0) {
+          const profileIds = caregiversData.map((c) => c.profile_id)
+
+          const { data: caregiverProfiles } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name, role")
+            .in("id", profileIds)
+
+          potentialRecipients = [...potentialRecipients, ...(caregiverProfiles || [])]
+        }
+      }
     }
   } else if (profile.role === "caregiver") {
     // Caregivers can message patients they care for and their clinicians
-    const { data: caregiver } = await supabase.from("caregivers").select("id").eq("profile_id", user.id).single()
+    const { data: caregiver } = await supabase.from("caregivers").select("id").eq("profile_id", user.id).maybeSingle()
 
     if (caregiver) {
       const { data: patientCaregivers } = await supabase
         .from("patient_caregivers")
-        .select(
-          `
-          patient:patients!patient_caregivers_patient_id_fkey(
-            profile:profiles!patients_profile_id_fkey(id, first_name, last_name, role)
-          )
-        `,
-        )
+        .select("patient_id")
         .eq("caregiver_id", caregiver.id)
         .is("revoked_at", null)
 
-      const patients = patientCaregivers?.map((pc) => pc.patient?.profile).filter((p) => p)
+      if (patientCaregivers && patientCaregivers.length > 0) {
+        const patientIds = patientCaregivers.map((pc) => pc.patient_id)
 
-      potentialRecipients = [...(patients || [])]
+        const { data: patientsData } = await supabase.from("patients").select("profile_id").in("id", patientIds)
+
+        if (patientsData && patientsData.length > 0) {
+          const profileIds = patientsData.map((p) => p.profile_id)
+
+          const { data: patientProfiles } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name, role")
+            .in("id", profileIds)
+
+          potentialRecipients = [...(patientProfiles || [])]
+        }
+      }
     }
   } else if (profile.role === "clinician") {
-    // Clinicians can message their patients
-    const { data: clinician } = await supabase.from("clinicians").select("id").eq("profile_id", user.id).single()
+    const { data: accessiblePatients } = await supabase
+      .from("accessible_patients")
+      .select("profile_id")
+      .eq("access_type", "clinician")
 
-    if (clinician) {
-      const { data: visits } = await supabase
-        .from("visits")
-        .select(
-          `
-          patient:patients!visits_patient_id_fkey(
-            profile:profiles!patients_profile_id_fkey(id, first_name, last_name, role)
-          )
-        `,
-        )
-        .eq("clinician_id", clinician.id)
+    if (accessiblePatients && accessiblePatients.length > 0) {
+      const profileIds = accessiblePatients.map((p) => p.profile_id)
 
-      const patients = visits
-        ?.map((v) => v.patient?.profile)
-        .filter((p) => p)
-        .filter((p, i, arr) => arr.findIndex((t) => t?.id === p?.id) === i)
+      const { data: patientProfiles } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, role")
+        .in("id", profileIds)
 
-      potentialRecipients = [...(patients || [])]
+      potentialRecipients = [...(patientProfiles || [])]
     }
   }
 
@@ -139,7 +151,7 @@ export default async function MessagesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Messages</h1>
-          <p className="text-muted-foreground mt-1">Secure HIPAA-compliant communication with your care team</p>
+          <p className="text-muted-foreground mt-1">Secure HIPAA-compliant communication</p>
         </div>
         <NewMessageButton recipients={potentialRecipients} currentUserId={user.id} />
       </div>

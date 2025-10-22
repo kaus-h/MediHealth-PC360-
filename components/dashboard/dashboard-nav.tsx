@@ -64,7 +64,7 @@ export function DashboardNav({ userRole, userName }: DashboardNavProps) {
     },
     {
       title: "Patients",
-      href: "/dashboard/team",
+      href: "/dashboard/patients",
       icon: Users,
       roles: ["clinician"],
     },
@@ -93,16 +93,22 @@ export function DashboardNav({ userRole, userName }: DashboardNavProps) {
       roles: ["patient", "caregiver", "clinician", "agency_admin"],
     },
     {
-      title: "Health Records",
-      href: "/dashboard/records",
-      icon: FileText,
+      title: "My Care Plans",
+      href: "/dashboard/care-plans",
+      icon: Activity,
       roles: ["patient", "caregiver"],
     },
     {
-      title: "Care Plans",
-      href: "/dashboard/care-plans",
+      title: "Patient Care Plans",
+      href: "/dashboard/clinician/care-plans",
       icon: Activity,
-      roles: ["patient", "caregiver", "clinician"],
+      roles: ["clinician"],
+    },
+    {
+      title: "Patient Medications",
+      href: "/dashboard/clinician/medications",
+      icon: Pill,
+      roles: ["clinician"],
     },
     {
       title: "Documents",
